@@ -22,13 +22,16 @@ class HomeViewController: UIViewController {
     // Table View
     var tableView = UITableView()
     var headerView = HomeTableHeaderView(frame: .zero)
+    
+    // Search controller
+    let searchController = UISearchController()
 
     // Action sheets
     var filteringActionSheet = UIAlertController()
     var sortingActionSheet = UIAlertController()
     var errorAlert = UIAlertController()
     
-    var networkinManager: NetworkingManagerable = NetworkingManager()
+    var networkingManager: NetworkingManagerable = NetworkingManager()
 
     // Properties
     var entries = [Entry]() {
@@ -56,11 +59,19 @@ class HomeViewController: UIViewController {
         }
     }
     
+    var searchText = "" {
+        didSet {
+            shapeViewModels()
+        }
+    }
+    
     var selectedSortingMethod: SortingMethod = .category {
         didSet {
             shapeViewModels()
         }
     }
+    
+    var isLoaded = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -76,12 +87,15 @@ extension HomeViewController {
         setupTableView()
         setupTableHeaderView()
         setupNavigationBar()
+        setupSearchController()
+        setupSkeletons()
         setupSortingActionSheet()
     }
     
     private func setupTableView() {
         tableView.backgroundColor = appColor
         tableView.register(ApiTableViewCell.self, forCellReuseIdentifier: ApiTableViewCell.reuseIdentifier)
+        tableView.register(SkeletonCell.self, forCellReuseIdentifier: SkeletonCell.reuseIdentifier)
         tableView.dataSource = self
         tableView.delegate = self
     }
@@ -111,6 +125,18 @@ extension HomeViewController {
         navigationController?.navigationBar.standardAppearance = customAppearance
     }
     
+    private func setupSearchController() {
+        searchController.searchBar.tintColor = .label
+        searchController.searchBar.delegate = self
+        searchController.searchBar.searchTextField.delegate = self
+        navigationItem.searchController = searchController
+    }
+    
+    private func setupSkeletons() {
+        let row = Entry.makeSketelon()
+        entries = Array(repeating: row, count: 10)
+    }
+    
     private func layout() {
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
@@ -134,12 +160,13 @@ extension HomeViewController {
     }
     
     private func fetchEntries() {
-        networkinManager.call(endpoint: .entries, decodeToType: EntriesApiResponse.self) { [weak self] result in
+        networkingManager.call(endpoint: .entries, decodeToType: EntriesApiResponse.self) { [weak self] result in
             guard let self = self else { return }
             DispatchQueue.main.async {
                 switch result {
                 case .success(let response):
                     self.entries = response.entries
+                    self.isLoaded = true
                 case .failure(let error):
                     self.displayError(error)
                 }
@@ -148,7 +175,7 @@ extension HomeViewController {
     }
     
     private func fetchCategories() {
-        networkinManager.call(endpoint: .categories, decodeToType: CategoriesApiResponse.self) { [weak self] result in
+        networkingManager.call(endpoint: .categories, decodeToType: CategoriesApiResponse.self) { [weak self] result in
             guard let self = self else { return }
             DispatchQueue.main.async {
                 switch result {
@@ -175,9 +202,11 @@ extension HomeViewController {
     private func filterEntries(_ entries: [Entry]) -> [Entry] {
         if !selectedCategory.isEmpty {
             return entries.filter { $0.category.lowercased().contains(selectedCategory.lowercased()) }
-        } else {
-            return entries
         }
+        if !searchText.isEmpty {
+            return entries.filter { $0.name.lowercased().contains(searchText.lowercased()) }
+        }
+        return entries
     }
     
     private func sortEntries(_ entries: inout [Entry]) {
@@ -213,9 +242,15 @@ extension HomeViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: ApiTableViewCell.reuseIdentifier, for: indexPath) as! ApiTableViewCell
-        let viewModel = viewModels[indexPath.row]
-        cell.configure(with: viewModel)
+        if isLoaded {
+            let cell = tableView.dequeueReusableCell(withIdentifier: ApiTableViewCell.reuseIdentifier, for: indexPath) as! ApiTableViewCell
+            let viewModel = viewModels[indexPath.row]
+            cell.configure(with: viewModel)
+            return cell
+        }
+        
+        let cell = tableView.dequeueReusableCell(withIdentifier: SkeletonCell.reuseIdentifier, for: indexPath) as! SkeletonCell
+        
         return cell
     }
 }
@@ -285,6 +320,29 @@ extension HomeViewController {
         }
         let vc = SFSafariViewController(url: url)
         present(vc, animated: true)
-        
+    }
+}
+
+// MARK: - UISearchBarDelegate, UITextFieldDelegate
+extension HomeViewController: UISearchBarDelegate, UITextFieldDelegate {
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        guard !searchText.isEmpty else {
+            return
+        }
+        self.searchText = searchText
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        clearFiltering()
+    }
+    
+    func textFieldShouldClear(_ textField: UITextField) -> Bool {
+        clearFiltering()
+        searchController.dismiss(animated: true)
+        return true
+    }
+    
+    private func clearFiltering() {
+        self.searchText = ""
     }
 }

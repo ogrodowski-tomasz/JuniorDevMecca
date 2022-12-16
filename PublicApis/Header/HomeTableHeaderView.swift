@@ -35,7 +35,7 @@ extension HomeTableHeaderView {
         titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         
-        subtitleLabel.text = "Some public API for Your new portfolio project..."
+        subtitleLabel.text = "Some public APIs for Your new portfolio project..."
         subtitleLabel.font = .futuraFont(ofSize: 20)
         subtitleLabel.numberOfLines = 0
         subtitleLabel.textAlignment = .center

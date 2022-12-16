@@ -30,4 +30,8 @@ struct Entry: Codable {
         case link = "Link"
         case category = "Category"
     }
+    
+    static func makeSketelon() -> Entry {
+        Entry(name: "Name", description: "Description", auth: "Auth", https: true, cors: "Yes", link: "link", category: "Category")
+    }
 }
