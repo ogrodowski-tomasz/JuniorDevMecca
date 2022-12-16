@@ -89,5 +89,6 @@ extension ApiTableViewCell {
         let name: String
         let category: String
         let description: String
+        let link: String
     }
 }

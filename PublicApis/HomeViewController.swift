@@ -5,6 +5,7 @@
 //  Created by Tomasz Ogrodowski on 15/12/2022.
 //
 
+import SafariServices
 import UIKit
 
 let appColor = UIColor.systemBlue
@@ -168,7 +169,7 @@ extension HomeViewController {
         var filteredEntries = filterEntries(entries)
         sortEntries(&filteredEntries)
         
-        viewModels = filteredEntries.map { ApiTableViewCell.ViewModel(name: $0.name, category: $0.category, description: $0.description) }
+        viewModels = filteredEntries.map { ApiTableViewCell.ViewModel(name: $0.name, category: $0.category, description: $0.description, link: $0.link) }
     }
     
     private func filterEntries(_ entries: [Entry]) -> [Entry] {
@@ -199,6 +200,9 @@ extension HomeViewController {
 extension HomeViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        let viewModel = viewModels[indexPath.row]
+        print("DEBUG: Should open \"\(viewModel.name)\" Safari with link: \(viewModel.link)")
+        displayLink(viewModel.link)
     }
 }
 
@@ -268,5 +272,19 @@ extension HomeViewController {
     @objc
     private func sortingButtonTapped() {
         present(sortingActionSheet, animated: true)
+    }
+}
+
+// MARK: - Safari Services
+extension HomeViewController {
+    
+    func displayLink(_ link: String) {
+        guard let url = URL(string: link) else {
+            displayError(.invalidUrl)
+            return
+        }
+        let vc = SFSafariViewController(url: url)
+        present(vc, animated: true)
+        
     }
 }
