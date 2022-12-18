@@ -8,7 +8,7 @@
 import SafariServices
 import UIKit
 
-let appColor = UIColor.systemBlue
+let appColor = UIColor.systemTeal
 
 enum SortingMethod: String, CaseIterable {
     case category = "Category ↓"
@@ -25,6 +25,9 @@ class HomeViewController: UIViewController {
     
     // Search controller
     let searchController = UISearchController()
+    
+    var filterBarButton = UIBarButtonItem()
+    var sortBarButton = UIBarButtonItem()
 
     // Action sheets
     var filteringActionSheet = UIAlertController()
@@ -109,13 +112,13 @@ extension HomeViewController {
     }
     
     private func setupNavigationBar() {
-        let filterButton = UIBarButtonItem(title: "Filter", style: .done, target: self, action: #selector(filterButtonTapped))
-        filterButton.tintColor = .label
-        navigationItem.rightBarButtonItem = filterButton
+        filterBarButton = UIBarButtonItem(title: "Filter", style: .done, target: self, action: #selector(filterButtonTapped))
+        filterBarButton.tintColor = .label
+        navigationItem.rightBarButtonItem = filterBarButton
         
-        let sortingButton = UIBarButtonItem(title: "Sort", style: .plain, target: self, action: #selector(sortingButtonTapped))
-        sortingButton.tintColor = .label
-        navigationItem.leftBarButtonItem = sortingButton
+        sortBarButton = UIBarButtonItem(title: selectedSortingMethod.rawValue, style: .plain, target: self, action: #selector(sortingButtonTapped))
+        sortBarButton.tintColor = .label
+        navigationItem.leftBarButtonItem = sortBarButton
         
         let customAppearance = UINavigationBarAppearance()
         customAppearance.backgroundColor = appColor
@@ -240,7 +243,6 @@ extension HomeViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let viewModel = viewModels[indexPath.row]
-        print("DEBUG: Should open \"\(viewModel.name)\" Safari with link: \(viewModel.link)")
         displayLink(viewModel.link)
     }
 }
@@ -275,12 +277,14 @@ extension HomeViewController {
         filteringActionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         filteringActionSheet.addAction(UIAlertAction(title: "Show all", style: .destructive, handler: { _ in
             self.selectedCategory = ""
+            self.setupFilterBarButtonTitle(with: "Filter")
         }))
         
         // Category actions
         for category in categories {
             filteringActionSheet.addAction(UIAlertAction(title: category, style: .default, handler: { action in
                 guard let selectedCategory = action.title else { return }
+                self.setupFilterBarButtonTitle(with: selectedCategory)
                 self.selectedCategory = selectedCategory
             }))
         }
@@ -292,8 +296,17 @@ extension HomeViewController {
         for sortingMethod in SortingMethod.allCases {
             sortingActionSheet.addAction(UIAlertAction(title: sortingMethod.rawValue, style: .default, handler: { _ in
                 self.selectedSortingMethod = sortingMethod
+                self.setupSortingBarButtonTitle(with: sortingMethod.rawValue)
             }))
         }
+    }
+    
+    private func setupFilterBarButtonTitle(with title: String) {
+        filterBarButton.title = title
+    }
+    
+    private func setupSortingBarButtonTitle(with title: String) {
+        sortBarButton.title = title
     }
     
     private func displayError(_ error: NetworkingError) {
