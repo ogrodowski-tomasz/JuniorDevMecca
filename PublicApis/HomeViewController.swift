@@ -203,7 +203,7 @@ extension HomeViewController {
     }
     
     /// Filtering given entries in terms of category and text from text field
-    private func filterEntries(_ entries: [Entry]) -> [Entry] {
+    func filterEntries(_ entries: [Entry]) -> [Entry] {
         var filteredEntries = [Entry]()
         if !selectedCategory.isEmpty {
             filteredEntries = entries.filter { $0.category.lowercased().contains(selectedCategory.lowercased()) }
