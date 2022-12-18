@@ -199,14 +199,24 @@ extension HomeViewController {
         viewModels = filteredEntries.map { ApiTableViewCell.ViewModel(name: $0.name, category: $0.category, description: $0.description, link: $0.link) }
     }
     
+    /// Filtering given entries in terms of category and text from text field
     private func filterEntries(_ entries: [Entry]) -> [Entry] {
+        var filteredEntries = [Entry]()
         if !selectedCategory.isEmpty {
-            return entries.filter { $0.category.lowercased().contains(selectedCategory.lowercased()) }
+            filteredEntries = entries.filter { $0.category.lowercased().contains(selectedCategory.lowercased()) }
         }
+        
         if !searchText.isEmpty {
-            return entries.filter { $0.name.lowercased().contains(searchText.lowercased()) }
+            // If filteredEntries is empty, then it means no CATEGORY filter was selected so we want to filter all entries.
+            if filteredEntries.isEmpty {
+                filteredEntries = entries.filter { $0.name.lowercased().contains(searchText.lowercased()) }
+            } else {
+                // Otherwise we want to filter by name only entries of selected category
+                filteredEntries = filteredEntries.filter { $0.name.lowercased().contains(searchText.lowercased()) }
+            }
         }
-        return entries
+        
+        return filteredEntries.isEmpty ? entries : filteredEntries
     }
     
     private func sortEntries(_ entries: inout [Entry]) {
